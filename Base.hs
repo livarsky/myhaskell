@@ -1,4 +1,4 @@
--- Явно выпишем всё, что нам понадобится.
+﻿-- Явно выпишем всё, что нам понадобится.
 -- Мы об этих штуках ещё не говорили, потому
 -- просто игнорируйте эти строчки.
 -- В них мы из стандартной библиотеки хапаем
@@ -112,9 +112,10 @@ sqrt'''' x = fixedPoint (averageDamp . newton $ \y -> y*y - x) 1
 --        = 10 * 9 * 8 * 7 * 6 * 5 * 24
 --        ...
 --        = 3628800
+--fac 0 = 1
+--fac n = n * fac (n - 1)
 fac 0 = 1
 fac n = n * fac (n - 1)
-
 -- а у этой версии ничего не разрастается:
 -- fac' 10 = fac'' 10 1
 --         = fac'' 9 10
@@ -148,8 +149,11 @@ data Bool' = True' | False'
 
 -- После этого, например, можно определить свой оператор
 -- if:
-if' True  a b = a
-if' False a b = b
+toBool :: Bool' -> Bool
+toBool True' = True
+toBool False' = False
+if' True'  a b = a
+if' False' a b = b
 
 -------------------------------------------
 -- Избавляемся от встроенных типов.
@@ -190,21 +194,32 @@ plus'' (Succ a) b = Succ $ plus'' a b
 
 -- Реализуйте:
 -- * умножение (через сложение)
--- mul :: Nat -> Nat -> Nat
--- mul a b = ?
+mul :: Nat -> Nat -> Nat
+mul Zero b = Zero
+mul (Succ a) b = plus (mul a b) b 
 
 -- * вычитание (без использования предыдущих)
 -- При этом, sub a b | (a - b), если a >= b
 --                   | 0        иначе
 
--- sub :: Nat -> Nat -> Nat
--- sub a b = ?
+sub :: Nat -> Nat -> Nat
+sub b Zero = b
+sub Zero b = Zero
+sub (Succ a) (Succ b) = sub a b
 
 -- * деление (через вычитание, остаток можно выкинуть)
--- div :: Nat -> Nat -> Nat
--- div a b = ?
+eq' :: Nat -> Nat -> Bool'
+eq' Zero Zero = True'
+eq' Zero a = False'
+eq' a Zero = False'
+eq' (Succ a) (Succ b) = (eq' a b)
 
--------------------------------------------
+div :: Nat -> Nat -> Nat
+div a Zero = Zero
+div Zero a = Zero
+div a b = if' (eq' (sub (Succ a) b) Zero) (Zero) (Succ(div(sub a b) b))
+
+------------------------------------------
 -- Избавляемся от встроенных типов.
 -- Продолжаем целыми числами (в математике -- жирная Z)
 
@@ -212,24 +227,58 @@ plus'' (Succ a) b = Succ $ plus'' a b
 -- тем свойством, что каждое целое число имеет в нём
 -- уникальное представление.
 
--- data Integer = ?
+data Integer = Zzero | Zsucc Integer | Neg Integer
+    deriving Show 
+
+fromZint 0 = Zzero 
+fromZint a = if a < 0 then Neg $ fromZint (-a)
+             else Zsucc $ fromZint (a - 1) 
+
+toZint Zzero = 0
+toZint (Neg a) = - (toZint a)
+toZint (Zsucc a) = 1 + toZint a
+
 
 -- Реализуйте:
 -- * сложение
--- zplus :: Integer -> Integer -> Integer
--- zplus a b = ?
 
--- * умножение
--- zmul :: Integer -> Integer -> Integer
--- zmul a b = ?
+zplus :: Integer -> Integer -> Integer
+zsub :: Integer -> Integer -> Integer
+
+zplus Zzero a = a
+zplus (Neg a) b = zsub b a
+zplus a (Neg b) = zsub a b
+zplus (Zsucc a) b = zplus a (Zsucc b)
 
 -- * вычитание
--- zsub :: Integer -> Integer -> Integer
--- zsub a b = ?
+zsub a Zzero = a
+zsub Zzero a = (Neg a)
+zsub (Neg a) (Neg b) = zsub b a
+zsub (Neg a) b = Neg (zplus a b)
+zsub a (Neg b) = zplus a b
+zsub (Zsucc a) (Zsucc b) = zsub a b 
 
+-- * умножение
+zmul :: Integer -> Integer -> Integer
+zmul a Zzero = Zzero
+zmul (Neg a) (Neg b) = zmul a b   -- можно убрать, т.к. нижние 2 выражения его осуществляют
+zmul (Neg a) b = Neg (zmul a b)
+zmul a (Neg b) = Neg (zmul a b)
+zmul a (Zsucc b) = zplus a (zmul a b)
 -- * деление
--- zdiv :: Integer -> Integer -> Integer
--- zdiv a b = ?
+
+eq'' :: Integer -> Integer -> Bool'
+eq'' Zzero Zzero = True'
+eq'' (Zsucc a) Zzero = False'
+eq'' (Neg a) Zzero = True'
+
+zdiv :: Integer -> Integer -> Integer
+zdiv Zzero a = Zzero
+zdiv a Zzero = Zzero
+zdiv (Neg a) (Neg b) = zdiv a b -- можно убрать, т.к. нижние 2 выражения его осуществляют
+zdiv (Neg a) b = Neg (zdiv a b)
+zdiv a (Neg b) = Neg (zdiv a b)
+zdiv a b = if' (eq''(zsub (Zsucc a) b) (Zzero)) (Zzero)  (Zsucc(zdiv(zsub a b) b))
 
 -------------------------------------------
 -- Избавляемся от встроенных типов.
@@ -238,24 +287,24 @@ plus'' (Succ a) b = Succ $ plus'' a b
 -- Придумайте тип для рациональных чисел.
 -- Уникальность представления каждого числа не обязательна.
 
--- data Rational = ?
+data Rational = Rat Integer Integer
 
 -- Реализуйте:
 -- * сложение
--- rplus :: Rational -> Rational -> Rational
--- rplus a b = ?
+rplus :: Rational -> Rational -> Rational
+rplus (Rat a c) (Rat b d) = Rat (zplus(zmul a d) (zmul b c)) (zmul c d)
 
 -- * умножение
--- rmul :: Rational -> Rational -> Rational
--- rmul a b = ?
+rmul :: Rational -> Rational -> Rational
+rmul (Rat a c) (Rat b d) = Rat (zmul a b) (zmul c d)
 
 -- * вычитание
--- rsub :: Rational -> Rational -> Rational
--- rsub a b = ?
+rsub :: Rational -> Rational -> Rational
+rsub (Rat a c) (Rat b d) = Rat (zsub (zmul a d) (zmul b c)) (zmul c d)
 
 -- * деление
--- rdiv :: Rational -> Rational -> Rational
--- rdiv a b = ?
+rdiv :: Rational -> Rational -> Rational
+rdiv (Rat a c) (Rat b d) =  Rat (zmul a d) (zmul c b)
 
 -------------------------------------------
 -- Конструируем типы.
@@ -319,8 +368,8 @@ curry :: (Pair a b -> c) -> a -> b -> c
 curry f a b = f (Pair a b)
 
 -- Реализуйте обратную:
--- uncurry :: (a -> b -> c) -> Pair a b -> c
--- uncurry a b = ?
+uncurry :: (a -> b -> c) -> Pair a b -> c
+uncurry f (Pair a b) = f a b  
 
 -- Просто какие-то примеры.
 example8 (Pair Zero (Succ _)) = Succ Zero
@@ -333,6 +382,7 @@ example9 (Pair (Pair a b) c) = Pair a (Pair b c)
 -- pmap :: (a -> a') -> (b -> b') -> Pair a b -> Pair a' b'
 -- pmap f g p = ?
 -- делающую что-то разумное.
+
 
 -------------------------------------------
 -- Конструируем типы.
@@ -348,8 +398,9 @@ length Nil = 0
 length (Cons _ b) = 1 + length b
 
 -- Реализуйте функцию map с типом
--- map :: (a -> b) -> List a -> List b
--- map f l = ?
+map :: (a -> b) -> List a -> List b
+map f Nil = Nil
+map f (Cons a ost) = Cons(f a) (map f ost)
 -- делающую что-то разумное и такую, что length l == length (map f l)
 
 data Tree a = Node a (Tree a) (Tree a) -- Узел
@@ -362,13 +413,15 @@ height Leaf = 0
 height (Node _ a b) = 1 + max (height a) (height b)
 
 -- Реализуйте функцию
--- tmap :: (a -> b) -> Tree a -> Tree b
--- tmap f t = ?
+tmap :: (a -> b) -> Tree a -> Tree b
+tmap f Leaf = Leaf
+tmap f (Node a l r) = Node (f a) (tmap f l) (tmap f r) 
 -- делающую что-то разумное и такую, что height t == height (tmap f t)
 
 -- Реализуйте функцию
--- list2tree :: List a -> Tree a
--- list2tree l = ?
+list2tree :: List a -> Tree a
+list2tree Nil = Leaf
+list2tree (Cons a l) = Node a Leaf (list2tree l)
 -- делающую что-то разумное и такую, что length l == height (list2tree l)
 
 -------------------------------------------
@@ -380,45 +433,58 @@ data Maybe a = Just a
     deriving Show
 
 -- Реализуйте функцию
--- find :: (a -> Bool) -> List a -> Maybe a
--- find p t = ?
+
+find :: (a -> Bool) -> List a -> Maybe a
+find p Nil = Nothing
+find p (Cons a l) = if (p a) == True then Just a
+					else find p l
 -- которая ищет в списке t элемент, удовлетворяющий предикату p (если такой есть).
 
 -- Реализуйте функцию
--- filter :: (a -> Bool) -> List a -> List a
--- filter p t = ?
+filter :: (a -> Bool) -> List a -> List a
+filter p Nil = Nil
+filter p (Cons a l) = if (p a) == True then Cons a (filter p l) 
+					  else filter p l		
 -- которая генерирует список из элементов t, удовлетворяющих предикату f.
 
 isJust Nothing  = False
 isJust (Just _) = True
 
 -- При помощи filter, isJust и map реализуйте разумную функцию с типом
--- maybefilter :: List (Maybe a) -> List a
--- maybefilter l = ?
---
+maybefilter :: List (Maybe a) -> List a
+maybefilter l = map f1 (filter isJust l) 
+f1 :: Maybe a -> a
+f1 (Just a) = a
+
 -- подсказка:
 -- map (\(Just a) -> a)
 -- Что в этой функции (и подсказке) плохо?
 
 -- Реализуйте разумную функцию
--- gfilter :: (a -> Maybe b) -> List a -> List b
--- gfilter f l = ?
-
+gfilter :: (a -> Maybe b) -> List a -> List b
+gfilter f Nil = Nil
+gfilter f (Cons a l) = if isJust (f a) == True then Cons (f1 (f a)) (gfilter f l)  
+					   else gfilter f l
+					   
 -- При помощи неё реализуйте maybefilter':
--- maybefilter' :: List (Maybe a) -> List a
--- maybefilter' l = ?
+maybefilter' :: List (Maybe a) -> List a
+f3 :: Maybe a -> Maybe a
+f3 a = a
+maybefilter' l = gfilter f3 l
 -- не обладающую предыдущим недостатком.
 
 data Either a b = Left a
                 | Right b
     deriving Show
 
-data Empty --Пустое множество
+data Empty = Empty --Пустое множество
 
 -- Реализуйте
--- maybe2either :: Maybe a -> Either Empty a
--- maybe2either m = ?
+maybe2either :: Maybe a -> Either Empty a
+maybe2either Nothing = Left Empty
+maybe2either (Just a) = Right a
 
 -- Реализуйте
--- emap :: (a -> a') -> (b -> b') -> Either a b -> Either a' b'
--- emap f g e = ?
+emap :: (a -> a') -> (b -> b') -> Either a b -> Either a' b'
+emap f g (Left a) = Left (f a)
+emap f g (Right b) = Right (g b)
