@@ -1,0 +1,104 @@
+#!/bin/bash
+
+if [ $# -gt 1 ]
+then 
+	if [ -z $2 ]
+	then 
+		echo "err: need file"	     
+	else
+		case $1 in
+		init)
+			if [ -f "$2" ]
+			then
+				if [ -d ".$2" ]
+				then
+					echo "err: dir allready created"
+				else
+					mkdir ".$2"
+					echo "creating a repo"		
+				fi	
+			else
+				echo "err:file doesn't exist"
+			fi
+		;;		
+		commit)
+			if [ -d ".$2" ]
+			then
+				if [ -f ".$2/REV" ]
+				then
+					read headrev < ".$2/REV"
+					(( headrev = headrev + 1 ))
+					# проверить статус		
+					myvcs status $2 > /dev/null 2>&1
+					if [ $? -eq 0 ]
+					then
+						echo "err: Nothing to commit"
+						exit 0					
+					fi
+					diff $2 ".$2/last" > ".$2/diff_at_rev_$headrev"
+					cp $2 ".$2/last"
+					echo $headrev > ".$2/REV"
+					echo "Succeffully commited: Revision $headrev."	
+				else
+					echo "0" > ".$2/REV"
+					cp $2 ".$2/last"
+					echo "Succeffully commited: Revision 0."
+				fi			
+			else
+				echo "err: no repo"			
+			fi		
+		;;	
+		status)
+			if [ -d ".$2" ]
+			then
+				if [ -f ".$2/last" ]
+				then
+					diff -q ".$2/last" $2 > /dev/null 2>&1
+					if [ $? -ne 0 ]
+					then
+						echo "change"
+						exit 1
+					else
+						echo "not change"
+						exit 0	
+					fi
+				else
+					echo "err: nothing"
+				fi
+			else
+				echo "err: no repo"
+			fi
+			;;
+		update)
+			if [ -f ".$2/REV" ]
+			then
+				if [ ! -z $3 ]
+				then
+					read headrev < ".$2/REV"
+					if [ "$headrev" -ge $3 ]
+					then
+						cp ".$2/last" $2				
+						for i in $( seq $headrev -1 $(( $3 + 1 )) )
+						do
+							patch $2 ".$2/diff_at_rev_$i" > /dev/null
+						done	
+						echo "Succefully updated to revision #$3"
+					else
+						echo "err: u want a greater revision that is"
+					fi
+				else
+					echo "err: need third agrument: number"
+				fi
+			else
+				echo "err: No commits yet"
+			fi
+		;;		
+		*) 
+			echo "err: command not found"
+		esac	
+	fi	
+else
+	echo "err: Expected at least two arguments"
+fi
+exit 0
+
