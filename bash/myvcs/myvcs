@@ -35,7 +35,7 @@ then
 						echo "err: Nothing to commit"
 						exit 0					
 					fi
-					diff $2 ".$2/last" > ".$2/diff_at_rev_$headrev"
+					diff -u $2 ".$2/last" > ".$2/diff_at_rev_$headrev"
 					cp $2 ".$2/last"
 					echo $headrev > ".$2/REV"
 					echo "Succeffully commited: Revision $headrev."	
@@ -80,7 +80,7 @@ then
 						cp ".$2/last" $2				
 						for i in $( seq $headrev -1 $(( $3 + 1 )) )
 						do
-							patch $2 ".$2/diff_at_rev_$i" > /dev/null
+							patch -u $2 ".$2/diff_at_rev_$i" > /dev/null
 						done	
 						echo "Succefully updated to revision #$3"
 					else
