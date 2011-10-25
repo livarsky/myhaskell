@@ -80,18 +80,45 @@ data TooLoong = TooLoong deriving Show
 -- Результат: Или числа итераций недостаточно, чтобы достичь нормальной
 -- формы. Или (число нерастраченных итераций, терм в нормальной форме).
 -- 
--- normal :: Int -> Term -> Either TooLoong (Int, Term)
--- normal n term = ?
+normal :: Int -> Term -> Either TooLoong (Int, Term)
+normal n term = case n of
+	-1   -> Left TooLoong
+	(_)	 -> case term of
+			Var v            -> Right (n, Var v)
+			App t t'         -> let reduced = (normal (n - 1) t) in
+								case reduced of
+								Left TooLoong  -> Left TooLoong
+								Right (n', t'') -> case t'' of 
+													Abs v t3   -> normal (n' - 1) (betaReduct v t' t3)
+													(_)        -> let reduced2 = normal (n' - 1) (t') in
+																	case reduced2 of
+																	Left TooLoong    -> Left TooLoong
+																	Right (n'', t4)   -> Right (n'', (App t'' t4))
+			Abs v t          -> let reduced = (normal (n - 1) t) in
+								case reduced of
+								Left TooLoong  -> Left TooLoong
+								Right (n', t'') -> Right (n', Abs v t'')
 
--- Эту строчку после реализации стереть
-normal _ = normal'
 
 -- (*) Аналогичная нормализация аппликативным порядком.
--- applicative :: Int -> Term -> Either TooLoong (Int, Term)
--- applicative n term = ?
-
--- Эту строчку после реализации стереть
-applicative _ = applicative'
+applicative :: Int -> Term -> Either TooLoong (Int, Term)
+applicative n term = case n of
+	-1   -> Left TooLoong
+	(_)	 -> case term of
+			Var v            -> Right (n, Var v)
+			App t t'         -> let reduced = (applicative (n - 1) t') in
+								case reduced of
+								Left TooLoong  -> Left TooLoong
+								Right (n', t'') -> case t of 
+													Abs v t3   -> let reduced2 = applicative (n' - 1) t3 in
+																  case reduced2 of
+																  Left TooLoong   -> Left TooLoong
+																  Right (n'', t4) -> applicative (n'' - 1) (betaReduct v t'' t4)
+													(_)        -> let reduced2 = applicative (n' - 1) t in
+																  case reduced2 of
+																  Left TooLoong    -> Left TooLoong
+																  Right (n'', t4)   -> Right (n'', (App t4 t''))
+			Abs v t          -> Right (n, Abs v t)
 
 -- (***) Придумайте и реализуйте обобщённую функцию, выражающую некоторое
 -- семейство стратегий редуцирования. В том смысле, что номальная, нормальная
