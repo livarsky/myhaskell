@@ -5,98 +5,93 @@ import Prelude( Show(..), Bool(..), Integer(..), Rational(..), Num(..), (+), (-)
 -- Склеить два списка за O(length a)
 (++) :: [a] -> [a] -> [a]
 a ++ b = case a of
-		[] 		-> b
-		(c:cs)	-> c:(cs ++ b)
+	[] 	-> b
+	(c:cs)	-> c:(cs ++ b)
 
 -- Список без первого элемента
 tail :: [a] -> [a]
 tail a = case a of
-		[] 		-> error "empty list elem"
-		(b:bs) 	-> bs
+		[]	-> error "empty list elem"
+		(b:bs)	-> bs
 
 -- Список без последнего элемента
 init :: [a] -> [a]
 init a = case a of
-		[] 		-> []
+		[]	-> []
 		(b:[])	-> []
 		(b:bs) 	-> b:(init bs)
 
 -- Первый элемент
 head :: [a] -> a
 head a = case a of
-			[]		-> error "empty"
-			(b:bs) 	-> b
+		[]	-> error "empty"
+		(b:bs)	-> b
 
 -- Последний элемент
 last :: [a] -> a
 last a = case a of
-			[] 	-> error "empty"
-			(b:[]) -> b
-			(b:bs) -> last bs
+		[]	-> error "empty"
+		(b:[])	-> b
+		(b:bs)	-> last bs
 
 -- n первых элементов списка
 take :: Integer -> [a] -> [a]
 take n a = case n of
 		0 -> []
 		k -> case a of
-			   [] 		-> [] --error "no elem"
-			   (x:xs) 	-> x:(take (k - 1) xs)
+			   []	  -> [] --error "no elem"
+			   (x:xs) -> x:(take (k - 1) xs)
 
 -- Список без n первых элементов
 drop :: Integer -> [a] -> [a]
 drop n a = case n of
 		0 -> a
 		k -> case a of
-			[] 		-> []
+			[] 	-> []
 			(x:xs) 	-> drop (k - 1) xs 
-
 
 -- Копировать из списка в результат до первого нарушения предиката
 -- takeWhile (< 3) [1,2,3,4,1,2,3,4] == [1,2]
 takeWhile :: (a -> Bool) -> [a] -> [a]
 takeWhile p a = case a of
-		[] 		-> []
+		[] 	-> []
 		(x:xs) 	-> if (p x) == True then x:(takeWhile p xs)
-				   else []	
-
+			   else []	
 
 -- Не копировать из списка в результат до первого нарушения предиката,
 -- после чего скопировать все элементы, включая первый нарушивший
 -- dropWhile (< 3) [1,2,3,4,1,2,3,4] == [3,4,1,2,3,4]
 dropWhile :: (a -> Bool) -> [a] -> [a]
 dropWhile p a = case a of
-			[] 		-> []
-			(x:xs) 	-> if (p x) == True then dropWhile p xs
-					   else a
+		[]	-> []
+		(x:xs) 	-> if (p x) == True then dropWhile p xs
+			   else a
 
 -- Разбить список в пару (найбольший префикс удовлетворяющий p, всё остальное)
 span :: (a -> Bool) -> [a] -> ([a], [a])
 span p a = (takeWhile p a, dropWhile p a)
 
-
 -- Разбить список по предикату на (takeWhile p xs, dropWhile p xs),
 -- но эффективнее
 break :: (a -> Bool) -> [a] -> ([a], [a])
 break p a = case a of
-			 [] 		-> ([], [])
-			 (x:xs) 	-> 	if (p x) == True then (x:f, s) 
-					    	else ([], a)
-					    	where (f, s) = break p xs
+		[]	-> ([], [])
+		(x:xs)	-> if (p x) == True then (x:f, s) 
+			   else ([], a)
+			   where (f, s) = break p xs
 
 -- n-ый элемент списка (считая с нуля)
 (!!) :: [a] -> Integer -> a
 [] !! n = error "!!: empty list"
-l  !! n = 	if (n == 0) then head l
-			else if (n < 0) then error "!!: negative n"
-			else (tail l) !! (n - 1)
-
+l  !! n = if (n == 0) then head l
+	  else if (n < 0) then error "!!: negative n"
+	  else (tail l) !! (n - 1)
 
 -- Список задом на перёд
 reverse :: [a] -> [a]
 reverse a = tmprev a []
 tmprev [] b = b
 tmprev (a:al) b = tmprev al (a:b)
-
 
 -- (*) Все подсписки данного списка
 length :: [a] -> Integer
@@ -127,7 +122,6 @@ genlocalmut x xs k = (((take k xs) ++ (x:[])) ++ (drop k xs)):[] ++ (genlocalmut
 repeat :: a -> [a]
 repeat a = a:(repeat a)
 
-
 -- Левая свёртка
 -- порождает такое дерево вычислений:
 --         f
@@ -142,7 +136,6 @@ repeat a = a:(repeat a)
 foldl :: (a -> b -> a) -> a -> [b] -> a
 foldl f z [] = z
 foldl f z (x:xs) = foldl f (f z x) xs
-
 
 -- Тот же foldl, но в списке оказываются все промежуточные результаты
 -- last (scanl f z xs) == foldl f z xs
@@ -339,7 +332,7 @@ matsum (Matrix (x:xs)) (Matrix (y:ys)) = if (length xs == length ys) then Matrix
 										 
 stringSum :: Ring a => [a] -> [a] -> [a]
 stringSum s1 s2 = if (length s1 == length s2) then zipWith mappend s1 s2
-				  else error "not equals size matrix"
+		  else error "not equals size matrix"
 
 matscalarmul :: Ring a => a -> Matrix a -> Matrix a
 matscalarmul _ (Matrix []) = Matrix []
@@ -359,10 +352,10 @@ getStringElements a b n k = (getelem a b n k):(getStringElements a b n (k - 1))
 
 getelem :: Ring a => [[a]] -> [[a]] -> Integer -> Integer -> a
 getelem [] _ _ _ = error "no elem"
-getelem x y n k = 	let res1 = (x !! n) in
-					let res2 = (getcolumn k y) in
-					if (length res1 == length res2) then foldr (mappend) mzero (zipWith rmul res1 res2) 
-					else error "can't mult"
+getelem x y n k = let res1 = (x !! n) in
+		  let res2 = (getcolumn k y) in
+		  if (length res1 == length res2) then foldr (mappend) mzero (zipWith rmul res1 res2) 
+		  else error "can't mult"
 
 getcolumn :: Integer -> [[a]] -> [a]
 getcolumn k [] = []
