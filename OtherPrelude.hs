@@ -229,7 +229,7 @@ instance Monoid MulRational where
 instance Monoid MulInteger where
 		mzero = Mult 1
 		(Mult a) `mappend` (Mult b) = Mult $ a * b
-{-
+
 -- Фолдабл
 class MFoldable t where
     mfold :: Monoid a => t a -> a
@@ -243,8 +243,10 @@ class Monoid a => AMFoldable t a where
 data MTree a = Monoid a => MLeaf | MNode a (MTree a) (MTree a)
 
 -- Выпишите тип этого выражения. Фигурирует ли в нём Monoid? Почему?
+mtfold :: Monoid a => MTree a -> a
 mtfold MLeaf = mzero -- А то, что a - моноид нам будет даровано самой природой
 mtfold (MNode a l r) = a `mappend` (mtfold l) `mappend` (mtfold r)
+
 
 -- Напишите терм с типом
 -- (...) => MTree a -> x
@@ -253,7 +255,10 @@ mtfold (MNode a l r) = a `mappend` (mtfold l) `mappend` (mtfold r)
 -- констреинтах Monoid a быть не должно.
 -- Для широты фантазии в терме можно использовать классы типов, определённые в любом
 -- месте этого файла.
-mterm = ?
+
+mterm :: MTree a -> a
+mterm MLeaf = mzero
+mterm (MNode x _ _) = x
 
 -- (**) Разберитесь чем отличаются эти определения.
 -- "Скомпилируйте" их в наш гипотетический язык программирования с
@@ -286,7 +291,14 @@ class Monoid a => Group a where
     ginv :: a -> a
 
 -- Определите
---instance Group для Integer, Rational, MulRational
+instance Group Integer where
+	ginv a = mzero - a
+
+instance Group Rational where
+	ginv a = mzero - a
+
+instance Group MulRational where
+	ginv (RMult a) = RMult(mzero / a)
 
 -- Группу и Абелеву группу в Хаскеле тоже не различить :(
 class Group a => Ring a where
@@ -294,25 +306,68 @@ class Group a => Ring a where
     rmul :: a -> a -> a -- а это умножение
 
 -- Определите
---instance Ring для Integer, Rational
+instance Ring Integer where
+	rmul a b = a * b 
+
+instance Ring Rational where
+	rmul a b = a * b 
 
 -- На самом деле коммутативное кольцо, но что поделать
 class Ring a => Field a where
     rinv :: a -> a
 
 -- Определите
---instance Field для Rational
+instance Field Rational where
+	rinv a = 1 / a
 
 -- Реализуйте тип для матриц (через списки) и операции над ними
-data Matrix a = ?
+data Matrix a = Ring a => Matrix [[a]]
+
+getTable :: Matrix a -> [[a]]
+getTable (Matrix a) = a
+
+instance Show a => Show (Matrix a) where
+		show = show . getTable
+	
 -- Чем должно быть a? Моноидом? Группой? Ещё чем-нибудь?
+matsum :: Matrix a -> Matrix a -> Matrix a
+matsum (Matrix []) (Matrix []) = Matrix []
+matsum (Matrix a) (Matrix []) = Matrix a
+matsum (Matrix []) (Matrix b) = Matrix b
+matsum (Matrix (x:xs)) (Matrix (y:ys)) = if (length xs == length ys) then Matrix ((stringSum x y):getTable (matsum (Matrix xs) (Matrix ys)))
+										 else error "not equals size matrix"
+										 
+stringSum :: Ring a => [a] -> [a] -> [a]
+stringSum s1 s2 = if (length s1 == length s2) then zipWith mappend s1 s2
+				  else error "not equals size matrix"
 
-matsum = ?
+matscalarmul :: Ring a => a -> Matrix a -> Matrix a
+matscalarmul _ (Matrix []) = Matrix []
+matscalarmul n (Matrix (x:xs)) =  Matrix ((map (rmul n) x):getTable (matscalarmul n (Matrix xs)))
 
-matscalarmul = ?
+matmul :: Matrix a -> Matrix a -> Matrix a
+matmul (Matrix []) (Matrix []) = Matrix []
+matmul (Matrix a) (Matrix []) = Matrix []
+matmul (Matrix []) (Matrix b) = Matrix []
+matmul (Matrix a) (Matrix b) = Matrix (reverse $ getAllElements a b (length a - 1) (length (head b) - 1)) 
 
-matmul = ?
+getAllElements [] [] _ _ = []
+getAllElements a b (-1) k = []
+getAllElements a b n k = (reverse $ getStringElements a b n k):(getAllElements a b (n - 1) k)
+getStringElements a b n (-1) = []
+getStringElements a b n k = (getelem a b n k):(getStringElements a b n (k - 1))
 
+getelem :: Ring a => [[a]] -> [[a]] -> Integer -> Integer -> a
+getelem [] _ _ _ = error "no elem"
+getelem x y n k = 	let res1 = (x !! n) in
+					let res2 = (getcolumn k y) in
+					if (length res1 == length res2) then foldr (mappend) mzero (zipWith rmul res1 res2) 
+					else error "can't mult"
+
+getcolumn :: Integer -> [[a]] -> [a]
+getcolumn k [] = []
+getcolumn k (x:xs) = (x !! k):(getcolumn k xs)  
+{-
 -- (**) Реализуйте классы типов для векторных и скалярных полей.
 -- Перепишите в этих терминах что-нибудь из написанного выше.
 -- Реализуйте оператор дифференцирования, взятия градиента.
