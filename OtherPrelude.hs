@@ -1,132 +1,131 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, GADTs, TypeSynonymInstances #-}
 module OtherPrelude where
-import Prelude
+import Prelude( Show(..), Bool(..), Integer(..), Rational(..), Num(..), (+), (-), (*), (/), (<), (==), (>), (<=), (>=), not, (&&), error, ($), (.) )
 
 -- Склеить два списка за O(length a)
-(+++) :: [a] -> [a] -> [a]
-a +++ b = case a of
+(++) :: [a] -> [a] -> [a]
+a ++ b = case a of
 		[] 		-> b
-		(c:cs)	-> (c:(cs +++ b))
-
+		(c:cs)	-> c:(cs ++ b)
 
 -- Список без первого элемента
-tail1 :: [a] -> [a]
-tail1 a = case a of
+tail :: [a] -> [a]
+tail a = case a of
 		[] 		-> error "empty list elem"
 		(b:bs) 	-> bs
 
 -- Список без последнего элемента
-init1 :: [a] -> [a]
-init1 a = case a of
+init :: [a] -> [a]
+init a = case a of
 		[] 		-> []
 		(b:[])	-> []
-		(b:bs) 	-> b:(init1 bs)
+		(b:bs) 	-> b:(init bs)
 
 -- Первый элемент
-head1 :: [a] -> a
-head1 a = case a of
-			[]		-> error "emp1ty"
+head :: [a] -> a
+head a = case a of
+			[]		-> error "empty"
 			(b:bs) 	-> b
 
 -- Последний элемент
-last1 :: [a] -> a
-last1 a = case a of
+last :: [a] -> a
+last a = case a of
 			[] 	-> error "empty"
 			(b:[]) -> b
-			(b:bs) -> last1 bs
+			(b:bs) -> last bs
 
 -- n первых элементов списка
-take1 :: Integer -> [a] -> [a]
-take1 n a = case n of
+take :: Integer -> [a] -> [a]
+take n a = case n of
 		0 -> []
 		k -> case a of
 			   [] 		-> [] --error "no elem"
-			   (x:xs) 	-> x:(take1 (k - 1) xs)
+			   (x:xs) 	-> x:(take (k - 1) xs)
 
 -- Список без n первых элементов
-drop1 :: Integer -> [a] -> [a]
-drop1 n a = case n of
+drop :: Integer -> [a] -> [a]
+drop n a = case n of
 		0 -> a
 		k -> case a of
 			[] 		-> []
-			(x:xs) 	-> drop1 (k - 1) xs 
+			(x:xs) 	-> drop (k - 1) xs 
 
 
 -- Копировать из списка в результат до первого нарушения предиката
 -- takeWhile (< 3) [1,2,3,4,1,2,3,4] == [1,2]
-takeWhile1 :: (a -> Bool) -> [a] -> [a]
-takeWhile1 p a = case a of
+takeWhile :: (a -> Bool) -> [a] -> [a]
+takeWhile p a = case a of
 		[] 		-> []
-		(x:xs) 	-> if (p x) == True then x:(takeWhile1 p xs)
+		(x:xs) 	-> if (p x) == True then x:(takeWhile p xs)
 				   else []	
 
 
 -- Не копировать из списка в результат до первого нарушения предиката,
 -- после чего скопировать все элементы, включая первый нарушивший
 -- dropWhile (< 3) [1,2,3,4,1,2,3,4] == [3,4,1,2,3,4]
-dropWhile1 :: (a -> Bool) -> [a] -> [a]
-dropWhile1 p a = case a of
+dropWhile :: (a -> Bool) -> [a] -> [a]
+dropWhile p a = case a of
 			[] 		-> []
-			(x:xs) 	-> if (p x) == True then dropWhile1 p xs
+			(x:xs) 	-> if (p x) == True then dropWhile p xs
 					   else a
 
 -- Разбить список в пару (найбольший префикс удовлетворяющий p, всё остальное)
-span1 :: (a -> Bool) -> [a] -> ([a], [a])
-span1 p a = (takeWhile1 p a, dropWhile1 p a)
+span :: (a -> Bool) -> [a] -> ([a], [a])
+span p a = (takeWhile p a, dropWhile p a)
 
 
 -- Разбить список по предикату на (takeWhile p xs, dropWhile p xs),
 -- но эффективнее
-break1 :: (a -> Bool) -> [a] -> ([a], [a])
-break1 p a = case a of
+break :: (a -> Bool) -> [a] -> ([a], [a])
+break p a = case a of
 			 [] 		-> ([], [])
 			 (x:xs) 	-> 	if (p x) == True then (x:f, s) 
 					    	else ([], a)
-					    	where (f, s) = break1 p xs
+					    	where (f, s) = break p xs
 
 -- n-ый элемент списка (считая с нуля)
-(!!!) :: [a] -> Integer -> a
-[] !!! n = error "!!: empty list"
-l  !!! n = 	if (n == 0) then head1 l
-			else if (n < 0) then error "!!!: negative n"
-			else (tail1 l) !!! (n - 1)
+(!!) :: [a] -> Integer -> a
+[] !! n = error "!!: empty list"
+l  !! n = 	if (n == 0) then head l
+			else if (n < 0) then error "!!: negative n"
+			else (tail l) !! (n - 1)
 
 
 -- Список задом на перёд
-reverse1 :: [a] -> [a]
-reverse1 a = tmprev a []
+reverse :: [a] -> [a]
+reverse a = tmprev a []
 tmprev [] b = b
 tmprev (a:al) b = tmprev al (a:b)
 
 
 -- (*) Все подсписки данного списка
-length1 :: [a] -> Integer
-length1 [] = 0
-length1 (x:xs) = succ (length1 xs) 
+length :: [a] -> Integer
+length [] = 0
+length (x:xs) = 1 + length xs 
 
 subseq' :: [a] -> Integer -> [[a]]
-subseq' a 1 = [[head1 a]]
-subseq' a k = (take1 k a):subseq' a (k - 1)
+subseq' a 1 = [[head a]]
+subseq' a k = (take k a):subseq' a (k - 1)
 
-subseq a = reverse1 $ subseq' a (length1 a) -- reverse для красоты
+subseq a = reverse $ subseq' a (length a) -- reverse для красоты
 subsequences :: [a] -> [[a]]
-subsequences [] = [[]]
-subsequences a = (subseq a) ++ (subsequences (tail1 a)) 
+subsequences [] = []
+subsequences a = (subseq a) ++ (subsequences (tail a)) 
 
 -- (*) Все перестановки элементов данного списка
 permutations :: [a] -> [[a]]
 permutations (x:[]) = (x:[]):[]
-permutations a = genmut (head1 a) xss where xss = permutations (tail1 a)
+permutations a = genmut (head a) xss where xss = permutations (tail a)
 genmut :: a -> [[a]] -> [[a]]
 genmut x [] = []
-genmut x xss = (genlocalmut x (head1 xss) (length1 (head1 xss))) ++ (genmut x (tail1 xss))
+genmut x xss = (genlocalmut x (head xss) (length (head xss))) ++ (genmut x (tail xss))
 genlocalmut :: a -> [a] -> Integer -> [[a]]
 genlocalmut x xs 0 = (x:xs):[]
-genlocalmut x xs k = (((take1 k xs) ++ (x:[])) ++ (drop1 k xs)):[] ++ (genlocalmut x xs (k - 1))
+genlocalmut x xs k = (((take k xs) ++ (x:[])) ++ (drop k xs)):[] ++ (genlocalmut x xs (k - 1))
 
 -- Повторяет элемент бесконечное число раз
-repeat1 :: a -> [a]
-repeat1 a = a:(repeat1 a)
+repeat :: a -> [a]
+repeat a = a:(repeat a)
 
 
 -- Левая свёртка
@@ -140,16 +139,16 @@ repeat1 a = a:(repeat1 a)
 --   f   l!!1
 --  / \
 -- z  l!!0
-foldl2 :: (a -> b -> a) -> a -> [b] -> a
-foldl2 f z [] = z
-foldl2 f z (x:xs) = foldl2 f (f z x) xs
+foldl :: (a -> b -> a) -> a -> [b] -> a
+foldl f z [] = z
+foldl f z (x:xs) = foldl f (f z x) xs
 
 
 -- Тот же foldl, но в списке оказываются все промежуточные результаты
 -- last (scanl f z xs) == foldl f z xs
-scanl2 :: (a -> b -> a) -> a -> [b] -> [a]
-scanl2 f z [] = z:[]
-scanl2 f z (x:xs) = z:(scanl2 f (f z x) xs)
+scanl :: (a -> b -> a) -> a -> [b] -> [a]
+scanl f z [] = z:[]
+scanl f z (x:xs) = z:(scanl f (f z x) xs)
 
 -- Правая свёртка
 -- порождает такое дерево вычислений:
@@ -163,27 +162,27 @@ scanl2 f z (x:xs) = z:(scanl2 f (f z x) xs)
 --           \
 --            z
 --            
-foldr2 :: (a -> b -> b) -> b -> [a] -> b
-foldr2 f z [] = z
-foldr2 f z (x:xs) = f x (foldr2 f z xs) 
+foldr :: (a -> b -> b) -> b -> [a] -> b
+foldr f z [] = z
+foldr f z (x:xs) = f x (foldr f z xs) 
 
 
 -- Аналогично
 --  head (scanr f z xs) == foldr f z xs.
-scanr2 :: (a -> b -> b) -> b -> [a] -> [b]
-scanr2 f z [] = z:[]
-scanr2 f z (x:xs) = (f x (head1 tmp)):tmp where tmp = scanr2 f z xs 
+scanr :: (a -> b -> b) -> b -> [a] -> [b]
+scanr f z [] = z:[]
+scanr f z (x:xs) = (f x (head tmp)):tmp where tmp = scanr f z xs 
 
 finiteTimeTest = take 10 $ foldr (:) [] $ repeat 1
 
 -- map f l = из первой лабораторной
-map1 f [] = []
-map1 f (x:xs) = (f x):(map1 f xs)
+map f [] = []
+map f (x:xs) = (f x):(map f xs)
 
 -- Склеивает список списков в список
-concat1 :: [[a]] -> [a]
-concat1 [] = []
-concat1 (x:xs) = x ++ (concat1 xs)
+concat :: [[a]] -> [a]
+concat [] = []
+concat (x:xs) = x ++ (concat xs)
 
 -- Эквивалент (concat . map), но эффективнее
 concatMap :: (a -> [b]) -> [a] -> [b]
@@ -192,12 +191,15 @@ concatMap f (x:xs) = (f x) ++ (concatMap f xs)
 
 -- Сплющить два списка в список пар длинны min (length a, length b)
 zip :: [a] -> [b] -> [(a, b)]
-zip a b = ?
+zip a [] = []
+zip [] b = []
+zip (x:xs) (y:ys) = (x, y):(zip xs ys)
 
-{-
 -- Аналогично, но плющить при помощи функции, а не конструктором (,)
 zipWith :: (a -> b -> c) -> [a] -> [b] -> [c]
-zipWith = ?
+zipWith f [] b = []
+zipWith f a [] = []
+zipWith f (x:xs) (y:ys) = (f x y):(zipWith f xs ys) 
 
 -- Интересные классы типов
 class Monoid a where
@@ -217,15 +219,17 @@ data MulRational = RMult Rational
 
 -- Реализуйте инстансы Monoid для Rational и MulRational
 instance Monoid Rational where
-    ?
+		mzero = 0
+		mappend = (+)
 
 instance Monoid MulRational where
-    ?
+		mzero = RMult 1
+		(RMult a) `mappend` (RMult b) = RMult $ a * b
 
-instange Monoid MulInteger where
-    mzero = 1
-    (Mult a) `mappend` (Mult b) = Mult $ a * b
-
+instance Monoid MulInteger where
+		mzero = Mult 1
+		(Mult a) `mappend` (Mult b) = Mult $ a * b
+{-
 -- Фолдабл
 class MFoldable t where
     mfold :: Monoid a => t a -> a
