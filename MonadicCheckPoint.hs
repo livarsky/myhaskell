@@ -110,7 +110,7 @@ instance Monad1 m => Applicative m where
 -- need: ma >>= (a -> m b) = mb
 -- given f = m (a -> b) = m t can convert to m b : f >>= g = m b
 -- g :: t -> m b = \t -> (return1 (t a)) where t = a -> b
-   f <*> ma = ma >>= (\a -> (f >>= (\t -> return1 (t a)))) 
+    f <*> ma = ma >>= (\a -> (f >>= (\t -> return1 (t a)))) 
 
 
 instance Monad2 m => Monad1 m where
@@ -129,7 +129,7 @@ instance Monad3 m => Monad1 m where
 -- (>=>) :: (a -> m b) -> (b -> m c) -> (a -> m c)
 -- ]a = ma, b = a, c = b : (m a -> m a) -> (a -> m b) -> (m a -> m b)    
 --                            id               f              g  
-	ma >>= f = (id >=> f) ma  
+    ma >>= f = (id >=> f) ma  
 
 
 instance Monad1 m => Monad3 m where
@@ -140,4 +140,4 @@ instance Monad1 m => Monad3 m where
 -- m c =  m b -> (b -> m c) = mb >>= g 
 -- m b = m a -> (a -> m b) = ma >>= f
 -- m a = return1 a   
-   f >=> g = \a -> ((return1 a) >>= f) >>= g
+    f >=> g = \a -> ((return1 a) >>= f) >>= g
