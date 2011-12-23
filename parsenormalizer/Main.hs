@@ -31,39 +31,40 @@ parseLet = do {
 	;letTerm <- parseTerm
 	;Main.reserved "in"
 	;inTerm <- parseTerm
-    ;return $ App $ Abs id inTerm letTerm
+	;return $ App $ Abs id inTerm letTerm
 }
 
 parseLambda :: Parser Term
 parseLambda = 
-            do {
-				Main.reservedOp "\\"
-				;ids <- many1 Main.identifier
-				;(Main.reservedOp ".") <|> (Main.reservedOp "->")
-				;term <- parseTerm
-				;return $ absList ids term
-			}
-		    <|> do {
-		        term <- parseSimpleTerm
+             do {
+                Main.reservedOp "\\"
+                ;ids <- many1 Main.identifier
+                ;(Main.reservedOp ".") <|> (Main.reservedOp "->")
+                ;term <- parseTerm
+                ;return $ absList ids term
+            }
+            <|> do {
+                term <- parseSimpleTerm
                 ; terms <- many parseSimpleTerm
                 ; return $ appList term terms
-			}			
+            }			
 
 parseSimpleTerm :: Parser Term
-parseSimpleTerm = do{ id <- Main.identifier
-					  ; return $ Var id
-				  }
-				  <|> Main.parens parseLambda
+parseSimpleTerm = do { 
+                     id <- Main.identifier
+                     ; return $ Var id
+                  }
+                  <|> Main.parens parseLambda
 
 parseTerm :: Parser Term
 parseTerm = parseLet <|> parseLambda
 			
 convert :: Bool -> Term -> String
 convert isInParens term = case isInParens of
-							False   -> case term of
-										(Abs var term') -> "\\" ++ var ++ " -> " ++ (convert False term')
-										(App t1 t2)     -> (convert True t1) ++ " " ++ (convert True t2)
-										(Var v)         -> v
-							True    -> case term of
-										(Var v)  		-> v
-										term' 			-> "(" ++ (convert False term') ++ ")"
+                            False   -> case term of
+                                        (Abs var term') -> "\\" ++ var ++ " -> " ++ (convert False term')
+                                        (App t1 t2)     -> (convert True t1) ++ " " ++ (convert True t2)
+                                        (Var v)         -> v
+                            True    -> case term of
+                                        (Var v)         -> v
+                                        term'           -> "(" ++ (convert False term') ++ ")"
