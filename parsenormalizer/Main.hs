@@ -31,7 +31,7 @@ parseLet = do {
 	;letTerm <- parseTerm
 	;Main.reserved "in"
 	;inTerm <- parseTerm
-	;return $ App $ Abs id inTerm letTerm
+	;return $ App (Abs id inTerm) letTerm
 }
 
 parseLambda :: Parser Term
