@@ -147,7 +147,7 @@ runDaemon() {
 	    then
             exit 0
         fi
-        insert_queue
+        insert
         download
 		sleep 2	
 	done
