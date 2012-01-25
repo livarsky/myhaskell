@@ -12,24 +12,24 @@ readargs() {
 	while (($# > 0)) 
 	do
 	    case "$1" in
+		"-w")
+                	shift
+                	if (($# > 0)) 
+			then
+                            QQEDIR="$1"
+                	else
+                            echo "Wrong args, expect <dir>" >&2
+                       	    exit 1
+                	fi
+                	;;
 	        "-r")
                 	shift
 			if (($# > 0))
 			then
                             referer="$1"
                         else
-                            echo "Bad arguments. Expect referer." >&2
+                            echo "Wrong args, expect <referer>" >&2
                             exit 1
-                	fi
-                	;;
-        	"-w")
-                	shift
-                	if (($# > 0)) 
-			then
-                            QQEDIR="$1"
-                	else
-                            echo "Bad arguments. Expect <dir>." >&2
-                       	    exit 1
                 	fi
                 	;;
         	*) 
@@ -40,7 +40,7 @@ readargs() {
 	done
     if (( ${#URLS[@]} == 0 )) 
     then
-        echo "Bad arguments. Expect at least one url." >&2
+        echo "Wrong args, need more url" >&2
         exit 1
     fi
 }
