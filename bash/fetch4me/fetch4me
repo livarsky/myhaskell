@@ -106,9 +106,9 @@ download() {
     list=(`cat "$QQEDIR/.queue"`)
     if (( ${#list[@]} > 0 )) 
     then
-        url=${lst[0]}
-        ref=${lst[1]}
-        echo "Downloading $url. Referrer $ref." > "$QQEDIR/.tmpstatus"
+        url=${list[0]}
+        ref=${list[1]}
+        echo "Downloading $url, referrer is $ref..." > "$QQEDIR/.tmpstatus"
 	cat "$QQEDIR/.queue" | tail -n +3 >> "$QQEDIR/.tmpstatus"
         mv "$QQEDIR/.tmpstatus" "$QQEDIR/.status"
 	mkdir -p "Downloads/fetched4you/${ref//"/"/_}"
