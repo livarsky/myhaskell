@@ -1,0 +1,161 @@
+#!/bin/bash -e
+
+USAGE_INFO="Usage: fetch4me [-w <dir>] [-r <referer>] (<url>)*"
+
+paramValue=""
+referer="noreferer"
+
+QQEDIR=~/.fetch4me
+getElemFunc=wget
+
+readargs() {
+	while (($# > 0)) 
+	do
+	    case "$1" in
+		"-w")
+                	shift
+                	if (($# > 0)) 
+			then
+                            QQEDIR="$1"
+                	else
+                            echo "Wrong args, expect <dir>" >&2
+                       	    exit 1
+                	fi
+                	;;
+	        "-r")
+                	shift
+			if (($# > 0))
+			then
+                            referer="$1"
+                        else
+                            echo "Wrong args, expect <referer>" >&2
+                            exit 1
+                	fi
+                	;;
+        	*) 
+        	    URLS[ ${#URLS[@]} ]="$1"
+                    ;;
+            esac
+            shift
+	done
+    if (( ${#URLS[@]} == 0 )) 
+    then
+        echo "Wrong args, need more url" >&2
+        exit 1
+    fi
+}
+
+getData() {
+    if cat "~/$1" | grep "$2=" >/dev/null 2>&1
+    then
+        paramValue=`cat "~/$1" | grep "$2="`
+    else
+        paramValue=""
+    fi
+}
+
+readData() {
+	if [ -e "~/fetch4merc" ]
+	then
+	      getData "fetch4merc" "QQEDIR"
+	      confDir=$paramValue
+	      if [ -n $confDir ]
+	      then
+		   QQEDIR=$confDir
+	      fi
+			
+	      getData "fetch4merc" "GETELEMFUNC"
+	      confGetElemFunc=$paramValue
+	      if [ -n $confGetElemFunc ]
+	      then
+	 	  getElemFunc=$confGetElemFunc
+	      fi
+	fi	
+ 	return 0
+}
+
+
+createNewFiles() {
+	for url in "${URLS[@]}"
+    	do
+            fname="$QQEDIR/.download/${url//"/"/_}_${referer//"/"/_}"
+	    if [ ! -f "$fname.f4me" ] 
+	    then 
+		echo "$url"     >  "$fname.tmpf4me"
+	        echo "$referer" >> "$fname.tmpf4me"
+	        mv "$fname.tmpf4me" "$fname.f4me"
+	    fi	
+    done
+}
+
+insert() {
+    cp "$QQEDIR/.queue" "$QQEDIR/.tmpqueue"
+    list=$(ls -1 "$QQEDIR/.download")
+    for fname in $list 
+    do
+        cat "$QQEDIR/.download/$fname" >> "$QQEDIR/.tmpqueue"
+    done
+    mv "$QQEDIR/.tmpqueue" "$QQEDIR/.queue"
+    for fname in $list 
+    do
+        rm "$QQEDIR/.download/$fname"
+    done
+}
+
+download() {
+    list=(`cat "$QQEDIR/.queue"`)
+    if (( ${#list[@]} > 0 )) 
+    then
+        url=${list[0]}
+        ref=${list[1]}
+        echo "Downloading $url, referrer is $ref..." > "$QQEDIR/.tmpstatus"
+	cat "$QQEDIR/.queue" | tail -n +3 >> "$QQEDIR/.tmpstatus"
+        mv "$QQEDIR/.tmpstatus" "$QQEDIR/.status"
+	mkdir -p "Downloads/fetched4you/${ref//"/"/_}"
+        $getElemFunc -cq -o "Downloads/fetched4you/${ref//"/"/_}/${url//"/"/_}" --referer="$ref" "$url"        
+	time=`date +%s`
+	echo "$time $ref $url" >> "$QQEDIR/.finished"
+        cat "$QQEDIR/.queue" | tail -n +3 > "$QQEDIR/.tmpqueue"
+	mv "$QQEDIR/.tmpqueue" "$QQEDIR/.queue"
+    else
+        echo "" >  "$QQEDIR/.tmpstatus"
+        mv "$QQEDIR/.tmpstatus" "$QQEDIR/.status"
+    fi
+}
+
+init() {
+	if ! [ -d "$QQEDIR" ] 
+	then
+    		mkdir "$QQEDIR"
+    		mkdir "$QQEDIR/.download"
+    		touch "$QQEDIR/.pid"
+    		touch "$QQEDIR/.queue"
+    		touch "$QQEDIR/.status"
+    		touch "$QQEDIR/.finished"
+	fi
+}
+
+runDaemon() {
+	echo $$ > "$QQEDIR/.pid"
+	trap '' SIGHUP	
+	while true 
+	do
+	    read pid < "$QQEDIR/.pid"
+            if (( pid != $$)) 
+	    then
+                exit 0
+            fi
+            insert
+            download
+	    sleep 2	
+	done
+}
+
+readargs $@
+readData
+init
+createNewFiles
+
+read pid < "$QQEDIR/.pid" && ps -p "$pid" > /dev/null && exit 0 || true
+runDaemon
+
