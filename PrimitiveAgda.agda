@@ -223,7 +223,7 @@ lookup (fsucc f) (a :: as) = lookup f as
 
 list2vec : ∀ {A} → (l : List A) → Vec A (length l)
 list2vec [] = [0]
-list2vec (a :: as) = a :: (list2vec as)
+list2vec (a ∷ as) = a :: (list2vec as)
 
 data _×_ (A B : Set) : Set where
   _,_ : A → B → A × B
