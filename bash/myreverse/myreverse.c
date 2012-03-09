@@ -13,7 +13,7 @@ typedef struct buffer buf;
 
 int mread(buf *b) {
     int readed = read(0, b->data + b->stored, b->size - b->stored);
-    return readed > 0 ? b->stored += readed : -1;
+    return readed >= 0 ? b->stored += readed : -1;
 }
 
 int reverse(buf *b, int len) {
