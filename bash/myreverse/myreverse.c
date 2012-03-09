@@ -50,8 +50,8 @@ int kernel() {
   
     int skip = 0;
     while (1) {
-	    if (mread(&b) == -1) return -1;
-	    if (b.stored == 0) break;
+        if (mread(&b) == -1) return -1;
+        if (b.stored == 0) break;
         int end = findSplitter(&b);
         if (end == b.stored) {     
             if (end == b.size) {
@@ -63,9 +63,9 @@ int kernel() {
                 skip = 0;
                 remove_seg(&b, end + 1);
             } else {  
-	            int rev_res = reverse(&b, end);
+                int rev_res = reverse(&b, end);
                 if (rev_res == -1) return -1;
-		        remove_seg(&b, end + 1);
+                remove_seg(&b, end + 1);
             }
         }
      }
