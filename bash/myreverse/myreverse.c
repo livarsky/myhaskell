@@ -73,14 +73,14 @@ int kernel() {
                 if (mr == 0) break;
             }       
         } else {
-                if (skip) {
-                    skip = 0;
-                    remove_seg(&b, end + 1);
-                } else {  
-                    int rev_res = reverse(&b, end);
-                    if (rev_res == -1) return -1;
-                    remove_seg(&b, end + 1);
-                }
+            if (skip) {
+                skip = 0;
+                remove_seg(&b, end + 1);
+            } else {  
+                int rev_res = reverse(&b, end);
+                if (rev_res == -1) return -1;
+                remove_seg(&b, end + 1);
+            }
         }
     }
     return 0;
