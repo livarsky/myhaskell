@@ -37,7 +37,7 @@ int reverse(buf *b, int len) {
         start++;
         end--;
     }
-    if (len == 0) return 0; 
+    //if (len == 0) return 0; 
     return mwrite(b, len+1);
 }
 
