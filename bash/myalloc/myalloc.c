@@ -125,12 +125,10 @@ void* realloc(void* ptr, size_t size) {
 }
 
 void _init() {
-   // pthread_mutex_init(&threadInfoMutex, 0);
     pthread_mutex_init(&glob_mutex, 0);
 }
 
 void _fini() {
-   // pthread_mutex_destroy(&threadInfoMutex);
     pthread_mutex_destroy(&glob_mutex);
 
     size_t i;
