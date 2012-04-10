@@ -31,12 +31,7 @@ void bdelete(mybucket** list, mybucket* b) {
 	b->prev = NULL;
 	b->next = NULL;
 }
-/*
-mybucket* blast(mybucket* list) {
-	if (list == NULL) return NULL;
-	while(list->next != NULL) list = list->next;
-	return list;
-}*/
+
 
 mybucket* bcreate(int size) {
 	mybucket *b = (mybucket*)mmap(0, sizeof(mybucket)+size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -54,8 +49,7 @@ void bdestroy(mybucket* b) {
 
 void bdestroy_list(mybucket* list) {
 	if (list == NULL) return;
-	if (list->next != NULL) destroy_list(list->next);
-	destroy(list);
+	if (list->next != NULL) bdestroy_list(list->next);
+	bdestroy(list);
 }
 
-//} bucket_toolbox;

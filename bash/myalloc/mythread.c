@@ -22,10 +22,10 @@ mythread* getById(pthread_t id) {
 }
 
 void destroy_thread(mythread* p) {
-	if (p == NULL) return;
+  if (p == NULL) return;
   pthread_mutex_destroy(&p->thread_mutex);
-  destroy_list(p->big_list);
-  destroy_list(p->small_list);
+  bdestroy_list(p->big_list);
+  bdestroy_list(p->small_list);
   munmap((void*)p, sizeof(mythread));
 }
 
