@@ -292,38 +292,38 @@ static void* acceptor(void *thread) {
 	server_thread* server = (server_thread*)thread;
 	int sock = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
 	if (sock < 0)
-        	error("ERROR: Could not create socket");
-    	struct sockaddr_in6 servAddr6;
-    	memset(&servAddr6, 0, sizeof(servAddr6));
-    	servAddr6.sin6_family = AF_INET6;
-    	servAddr6.sin6_port = htons(server->port);
-    	servAddr6.sin6_addr = in6addr_any;
+        	perror("Could not create socket");
+    	struct sockaddr_in6 server_address6;
+    	memset(&server_address6, 0, sizeof(server_address6));
+    	server_address6.sin6_family = AF_INET6;
+    	server_address6.sin6_port = htons(server->port);
+    	server_address6.sin6_addr = in6addr_any;
     	int no = 0;
     	if (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (char*)&no, sizeof(no)) < 0)
-        	error("ERROR: setsockopt failed");
-    	if (bind(sock, (struct sockaddr*)&servAddr6, sizeof(servAddr6)) < 0)
-        	error("ERROR: Could not bind socket");
+        	perror("setsockopt failed");
+    	if (bind(sock, (struct sockaddr*)&server_address6, sizeof(server_address6)) < 0)
+        	perror("Could not bind socket");
     	if (listen(sock, 10) < 0)
-       		error("ERROR: Could not start listening on socket");
+       		perror("Could not start listening on socket");
     	while (1) {
-        	struct sockaddr_in6 cliAddr6;
-        	socklen_t cliAddrLen = sizeof(cliAddr6);
-       		int cli_socket = accept(sock, (struct sockaddr*)&cliAddr6, &cliAddrLen);
+        	struct sockaddr_in6 cli_address6;
+        	socklen_t cli_address_len = sizeof(cli_address6);
+       		int cli_socket = accept(sock, (struct sockaddr*)&cli_address6, &cli_address_len);
        		if (cli_socket < 0)
-            		error("ERROR: Error on accepting");
+            		perror("Error on accepting");
         	if (make_socket_non_blocking(cli_socket) < 0)
-			error("ERROR: make_socket_non_blocking failed");
+			perror("make_socket_non_blocking failed");
        		char cliAddrAsStr[INET6_ADDRSTRLEN];
-        	if (inet_ntop(AF_INET6, (void*)&cliAddr6.sin6_addr, cliAddrAsStr, INET6_ADDRSTRLEN) == NULL)
-            		error("ERROR: inet_ntop failed");
+        	if (inet_ntop(AF_INET6, (void*)&cli_address6.sin6_addr, cliAddrAsStr, INET6_ADDRSTRLEN) == NULL)
+            		perror("inet_ntop failed");
         	printf("Connection from <%s>\n", cliAddrAsStr);
 
-        	client_thread* tti = malloc(sizeof(client_thread));
-       		tti->socket = cli_socket;
-        	if (pthread_create(&tti->sender, NULL, sender, (void*)tti) != 0)
-            		error("ERROR: Could not create sender thread");
-        	if (pthread_create(&tti->receiver, NULL, receiver, (void*)tti) != 0)
-            		error("ERROR: Could not create receiver thread");
+        	client_thread* ct = malloc(sizeof(client_thread));
+       		ct->socket = cli_socket;
+        	if (pthread_create(&ct->sender, NULL, sender, (void*)ct) != 0)
+            		perror("Could not create sender thread");
+        	if (pthread_create(&ct->receiver, NULL, receiver, (void*)ct) != 0)
+            		perror("Could not create receiver thread");
     }
 }
 
@@ -338,15 +338,11 @@ int main(int argc, char* argv[]) {
     for (i = 0; i < n; ++i) {
         servs[i].port = atoi(argv[i + 1]);
         if (pthread_create(&servs[i].thr, NULL, acceptor, (void*)&servs[i]) != 0)
-            error("ERROR: Could not create acceptor thread");
+            perror("Could not create acceptor thread");
     }
-    //for (i = 0; i < 2 * n; ++i) {
-        if (pthread_join(servs[0 /* i */].thr, NULL) != 0)
-            error("ERROR: Could not join to acceptor thread");
-    //}
-    //free(atis);
-    //destroyMsgmqueue();
-
+    if (pthread_join(servs[0].thr, NULL) != 0)
+            perror("Could not join to acceptor thread");
+  
     return 0;
 }
 
