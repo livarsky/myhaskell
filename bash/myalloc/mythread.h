@@ -8,6 +8,7 @@ typedef struct {
 
 	pthread_t id;
 	mybucket* big_list, *small_list;
+	mybucket* big_list_end, *small_list_end;
 	size_t bigsize, smallsize;
 	pthread_mutex_t thread_mutex;
 } mythread;

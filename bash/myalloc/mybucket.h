@@ -15,8 +15,8 @@ typedef struct bucket mybucket;
 
 
 mybucket* bfind(mybucket*, int);
-void badd(mybucket** list, mybucket* b);
-void bdelete(mybucket** list, mybucket* b);
+void badd(mybucket** list, mybucket** list_end, mybucket* b);
+void bdelete(mybucket** list, mybucket** list_end, mybucket* b);
 mybucket* blast(mybucket* list);
 mybucket* bcreate(int size);
 void bdestroy(mybucket* b);
